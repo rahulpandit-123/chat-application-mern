@@ -7,10 +7,21 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Build files
 dist
 dist-ssr
 *.local
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Uploaded files
+src/Server/uploads/
 
 # Editor directories and files
 .vscode/*
