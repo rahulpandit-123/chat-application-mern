@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 
 const Profile = () => {
   const [user, setUser] = useState([]);
@@ -8,14 +8,17 @@ const Profile = () => {
 
   useEffect(() => {
     async function getprofile() {
-      const res = await axios.get("http://localhost:3000/profile", {
-        withCredentials: true,
-      });
+      try {
+        const res = await api.get("/profile");
 
-      setUser([res.data]);
-      if (res.data.profileImage) {
-       setProfileImg(res.data.profileImage);
+        setUser([res.data]);
+
+        if (res.data.profileImage) {
+          setProfileImg(res.data.profileImage);
         }
+      } catch (error) {
+        console.error("Profile fetch error:", error);
+      }
     }
 
     getprofile();
@@ -30,41 +33,48 @@ const Profile = () => {
     const formdata = new FormData();
     formdata.append("profile", selectedFile);
 
-    const res = await axios.post(
-      "http://localhost:3000/upload-profile",
-      formdata , {
-    withCredentials: true
-  }
-    );
+    try {
+      const res = await api.post("/upload-profile", formdata);
 
-    console.log(res.data?.profileImage);
-    setProfileImg(res.data?.profileImage);
+      console.log(res.data?.profileImage);
+
+      setProfileImg(res.data?.profileImage);
+
+      alert("Profile picture uploaded successfully");
+    } catch (error) {
+      console.error("Profile upload error:", error);
+      alert("Failed to upload profile picture");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex justify-center items-center">
-      <div className="bg-white w-full max-w-md p-8 rounded-xl shadow-md">
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-8">
+      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-md sm:p-8">
 
-        <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+        <h1 className="mb-6 text-center text-2xl font-bold text-gray-800">
           Profile
         </h1>
 
         {user.map((ele, key) => (
-          <div key={key} className="text-center mb-6">
-             
-            {profileImg && (
+          <div key={key} className="mb-6 text-center">
+
+            {profileImg ? (
               <img
                 src={profileImg}
                 alt="Profile"
-                className="w-32 h-32 rounded-full object-cover mx-auto mb-4"
+                className="mx-auto mb-4 h-32 w-32 rounded-full object-cover"
               />
+            ) : (
+              <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-full bg-gray-300 text-4xl font-bold text-gray-600">
+                {ele.name?.charAt(0).toUpperCase()}
+              </div>
             )}
 
             <h2 className="text-xl font-semibold text-gray-700">
               {ele.name}
             </h2>
 
-            <p className="text-gray-500 mt-1">
+            <p className="mt-1 break-all text-gray-500">
               {ele.email}
             </p>
           </div>
@@ -72,7 +82,7 @@ const Profile = () => {
 
         <div className="border-t pt-6">
 
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="mb-2 block text-sm font-medium text-gray-700">
             Profile Picture
           </label>
 
@@ -81,16 +91,16 @@ const Profile = () => {
             accept="image/*"
             onChange={(e) => setSelectedFile(e.target.files[0])}
             className="w-full text-sm text-gray-600
-                       file:mr-4 file:py-2 file:px-4
-                       file:rounded-lg file:border-0
-                       file:bg-gray-200 file:text-gray-700
+                       file:mr-4 file:rounded-lg file:border-0
+                       file:bg-gray-200 file:px-4 file:py-2
+                       file:text-gray-700
                        hover:file:bg-gray-300"
           />
 
           <button
             onClick={uploadprofile}
-            className="w-full mt-4 bg-blue-600 text-white py-2
-                       rounded-lg hover:bg-blue-700 transition"
+            className="mt-4 w-full rounded-lg bg-blue-600 py-2
+                       text-white transition hover:bg-blue-700"
           >
             Upload
           </button>
@@ -102,3 +112,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Chatlist from "../Components/Chatlist";
 import ChatWindow from "../Components/ChatWindow";
-import axios from "axios";
+import api from "../api/axios";
 import socket from "./Socket";
 import Sidebar from "../Components/Sidebar";
 import Contacts from "../Components/Contacts";
@@ -20,12 +20,7 @@ const Chat = () => {
   useEffect(() => {
     async function getProfile() {
       try {
-        const res = await axios.get(
-          "http://localhost:3000/profile",
-          {
-            withCredentials: true,
-          }
-        );
+        const res = await api.get("/profile");
 
         console.log("Profile loaded:", res.data);
 
@@ -45,10 +40,7 @@ const Chat = () => {
     if (!user?.email) return;
 
     const registerUser = () => {
-      console.log(
-        "Registering socket user:",
-        user.email
-      );
+      console.log("Registering socket user:", user.email);
 
       socket.emit("login", user.email);
     };
@@ -71,39 +63,19 @@ const Chat = () => {
   // =========================
   useEffect(() => {
     const handleConnect = () => {
-      console.log(
-        "Socket connected:",
-        socket.id
-      );
+      console.log("Socket connected:", socket.id);
     };
 
     const handleDisconnect = (reason) => {
-      console.log(
-        "Socket disconnected:",
-        reason
-      );
+      console.log("Socket disconnected:", reason);
     };
 
-    socket.on(
-      "connect",
-      handleConnect
-    );
-
-    socket.on(
-      "disconnect",
-      handleDisconnect
-    );
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
 
     return () => {
-      socket.off(
-        "connect",
-        handleConnect
-      );
-
-      socket.off(
-        "disconnect",
-        handleDisconnect
-      );
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
     };
   }, []);
 
@@ -112,26 +84,15 @@ const Chat = () => {
   // =========================
   useEffect(() => {
     const handleReceiveMessage = (newMessage) => {
-      console.log(
-        "New message received:",
-        newMessage
-      );
+      console.log("New message received:", newMessage);
 
-      setRefreshTrigger(
-        (prev) => prev + 1
-      );
+      setRefreshTrigger((prev) => prev + 1);
     };
 
-    socket.on(
-      "receive-message",
-      handleReceiveMessage
-    );
+    socket.on("receive-message", handleReceiveMessage);
 
     return () => {
-      socket.off(
-        "receive-message",
-        handleReceiveMessage
-      );
+      socket.off("receive-message", handleReceiveMessage);
     };
   }, []);
 
@@ -139,17 +100,14 @@ const Chat = () => {
   // REFRESH CHAT LIST
   // =========================
   const refreshChats = useCallback(() => {
-    console.log(
-      "Refreshing Chatlist..."
-    );
+    console.log("Refreshing Chatlist...");
 
-    setRefreshTrigger(
-      (prev) => prev + 1
-    );
+    setRefreshTrigger((prev) => prev + 1);
   }, []);
 
   return (
     <div className="h-screen w-full overflow-hidden bg-white">
+
       <CallManager user={user} />
 
       <div
@@ -167,9 +125,7 @@ const Chat = () => {
             SIDEBAR
         ========================== */}
         <div className="h-full min-w-0 overflow-hidden">
-          <Sidebar
-            setActivePage={setActivePage}
-          />
+          <Sidebar setActivePage={setActivePage} />
         </div>
 
         {/* =========================
@@ -190,18 +146,12 @@ const Chat = () => {
         >
           {activePage === "chats" ? (
             <Chatlist
-              setSelectedUser={
-                setSelectedUser
-              }
-              refreshTrigger={
-                refreshTrigger
-              }
+              setSelectedUser={setSelectedUser}
+              refreshTrigger={refreshTrigger}
             />
           ) : (
             <Contacts
-              setSelectedUser={
-                setSelectedUser
-              }
+              setSelectedUser={setSelectedUser}
             />
           )}
         </div>
@@ -224,15 +174,9 @@ const Chat = () => {
           <ChatWindow
             user={user}
             selectedUser={selectedUser}
-            setSelectedUser={
-              setSelectedUser
-            }
-            onMessageSent={
-              refreshChats
-            }
-            onMessagesRead={
-              refreshChats
-            }
+            setSelectedUser={setSelectedUser}
+            onMessageSent={refreshChats}
+            onMessagesRead={refreshChats}
           />
         </div>
 
@@ -242,3 +186,4 @@ const Chat = () => {
 };
 
 export default Chat;
+

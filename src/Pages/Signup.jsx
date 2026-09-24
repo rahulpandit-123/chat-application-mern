@@ -1,69 +1,141 @@
 import React, { useState } from "react";
-import axios from 'axios'
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import api from "../api/axios";
 
 const Signup = () => {
-  const [name, setName] = useState("rahul");
-  const [email, setEmail] = useState("rahulpandit3154@gmail.com");
-  const [password, setPassword] = useState("12345");
-  const [repassword, setRepassword] = useState("12345");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [repassword, setRepassword] = useState("");
 
-  const navigate = useNavigate()
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (password !== repassword) {
       alert("Passwords do not match");
       return;
     }
-    const obj = {name,email,password}
 
-    axios.post("http://localhost:3000/adduser",obj)
-    navigate("/login")
+    const obj = {
+      name,
+      email,
+      password,
+    };
 
+    try {
+      await api.post("/adduser", obj);
+
+      alert("Account created successfully");
+
+      navigate("/login");
+    } catch (error) {
+      console.error("Signup failed:", error);
+
+      if (error.response) {
+        alert(error.response.data || "Signup failed. Please try again.");
+      } else {
+        alert("Server error. Please try again.");
+      }
+    }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{display:"flex",flexDirection:"column",gap:"15px",height:"70vh",justifyContent:"center",alignItems:"center"}}
-    >
-      <input
-        type="text"
-        style={{ padding: "8px" }}
-        placeholder="Enter Your Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
+    <div className="flex min-h-screen items-center justify-center bg-gray-200 px-4 py-8">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md rounded-xl border-2 border-gray-300 bg-white px-5 py-8 shadow-md sm:px-8 sm:py-10"
+      >
+        {/* Heading */}
+        <h2 className="mb-8 text-center text-3xl font-bold text-blue-600">
+          Create Account
+        </h2>
 
-      <input
-        type="email"
-        style={{ padding: "8px" }}
-        placeholder="Enter Your Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
+        {/* Name */}
+        <div className="mb-4">
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Name
+          </label>
 
-      <input
-        type="password"
-        style={{ padding: "8px" }}
-        placeholder="Enter Your Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+          <input
+            type="text"
+            className="w-full rounded-md border border-gray-300 p-2.5 outline-none transition focus:border-blue-500"
+            placeholder="Enter Your Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
 
-      <input
-        type="password"
-        style={{ padding: "8px" }}
-        placeholder="Re-Enter Your Password"
-        value={repassword}
-        onChange={(e) => setRepassword(e.target.value)}
-      />
+        {/* Email */}
+        <div className="mb-4">
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Email
+          </label>
 
-      <button type="submit" style={{ padding: "9px" ,color:"white",backgroundColor:"black"}}>
-        Signup
-      </button>
-    </form>
+          <input
+            type="email"
+            className="w-full rounded-md border border-gray-300 p-2.5 outline-none transition focus:border-blue-500"
+            placeholder="Enter Your Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+
+        {/* Password */}
+        <div className="mb-4">
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Password
+          </label>
+
+          <input
+            type="password"
+            className="w-full rounded-md border border-gray-300 p-2.5 outline-none transition focus:border-blue-500"
+            placeholder="Enter Your Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        {/* Confirm Password */}
+        <div className="mb-6">
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Confirm Password
+          </label>
+
+          <input
+            type="password"
+            className="w-full rounded-md border border-gray-300 p-2.5 outline-none transition focus:border-blue-500"
+            placeholder="Re-Enter Your Password"
+            value={repassword}
+            onChange={(e) => setRepassword(e.target.value)}
+            required
+          />
+        </div>
+
+        {/* Signup Button */}
+        <button
+          type="submit"
+          className="w-full rounded-md bg-black py-2.5 font-medium text-white transition hover:bg-gray-800"
+        >
+          Signup
+        </button>
+
+        {/* Login Link */}
+        <p className="mt-6 text-center text-sm text-gray-600">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="font-semibold text-blue-600 hover:underline"
+          >
+            Login
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 };
 

@@ -2,7 +2,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import axios from "axios";
+import api from "../api/axios";
 import socket from "../Pages/Socket";
 
 const ChatWindow = ({
@@ -27,13 +27,10 @@ const ChatWindow = ({
 
     async function getMessages() {
       try {
-        const res = await axios.get(
-          `http://localhost:3000/messages/${
+        const res = await api.get(
+          `/messages/${encodeURIComponent(
             selectedUser.email
-          }`,
-          {
-            withCredentials: true,
-          }
+          )}`
         );
 
         console.log(
@@ -44,14 +41,11 @@ const ChatWindow = ({
         setMessages(res.data);
 
         // Mark messages as read
-        const readRes = await axios.put(
-          `http://localhost:3000/messages/${
+        const readRes = await api.put(
+          `/messages/${encodeURIComponent(
             selectedUser.email
-          }/read`,
-          {},
-          {
-            withCredentials: true,
-          }
+          )}/read`,
+          {}
         );
 
         console.log(
@@ -79,9 +73,7 @@ const ChatWindow = ({
   // =====================================
 
   useEffect(() => {
-    const receiveMessage = (
-      newMessage
-    ) => {
+    const receiveMessage = (newMessage) => {
       console.log(
         "New message received:",
         newMessage
@@ -96,12 +88,10 @@ const ChatWindow = ({
             selectedUser.email
         )
       ) {
-        setMessages(
-          (prevMessages) => [
-            ...prevMessages,
-            newMessage,
-          ]
-        );
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          newMessage,
+        ]);
 
         // If message is from selected user,
         // mark it as read immediately
@@ -111,15 +101,12 @@ const ChatWindow = ({
           newMessage.receiver ===
             user?.email
         ) {
-          axios
+          api
             .put(
-              `http://localhost:3000/messages/${encodeURIComponent(
+              `/messages/${encodeURIComponent(
                 selectedUser.email
               )}/read`,
-              {},
-              {
-                withCredentials: true,
-              }
+              {}
             )
             .then(() => {
               onMessagesRead();
@@ -159,9 +146,7 @@ const ChatWindow = ({
   // =====================================
 
   useEffect(() => {
-    const messageSent = (
-      savedMessage
-    ) => {
+    const messageSent = (savedMessage) => {
       console.log(
         "Message saved:",
         savedMessage
@@ -174,16 +159,14 @@ const ChatWindow = ({
         (
           savedMessage.sender ===
             selectedUser.email ||
-           receiver ===
+          savedMessage.receiver ===
             selectedUser.email
         )
       ) {
-        setMessages(
-          (prevMessages) => [
-            ...prevMessages,
-            savedMessage,
-          ]
-        );
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          savedMessage,
+        ]);
       }
 
       onMessageSent();
@@ -223,8 +206,7 @@ const ChatWindow = ({
 
     const newMessage = {
       sender: user.email,
-      receiver:
-        selectedUser.email,
+      receiver: selectedUser.email,
       text: message.trim(),
     };
 
@@ -256,15 +238,11 @@ const ChatWindow = ({
   // =====================================
 
   const handleStartCall = () => {
-    if (
-      !selectedUser?.email
-    ) {
+    if (!selectedUser?.email) {
       return;
     }
 
-    if (
-      window.startAudioCall
-    ) {
+    if (window.startAudioCall) {
       window.startAudioCall(
         selectedUser
       );
@@ -397,9 +375,7 @@ const ChatWindow = ({
               src={
                 selectedUser.profileImage
               }
-              alt={
-                selectedUser.name
-              }
+              alt={selectedUser.name}
               className="
                 h-9
                 w-9
@@ -463,9 +439,7 @@ const ChatWindow = ({
           </div>
         </div>
 
-        {/* =================================
-            CALL + CLOSE BUTTONS
-        ================================= */}
+        {/* CALL + CLOSE BUTTONS */}
 
         <div className="flex items-center gap-1">
 
@@ -473,9 +447,7 @@ const ChatWindow = ({
 
           <button
             type="button"
-            onClick={
-              handleStartCall
-            }
+            onClick={handleStartCall}
             className="
               flex
               h-9
@@ -556,119 +528,113 @@ const ChatWindow = ({
             No messages yet
           </div>
         ) : (
-          messages.map(
-            (msg) => {
+          messages.map((msg) => {
 
-              const isMyMessage =
-                msg.sender ===
-                user?.email;
+            const isMyMessage =
+              msg.sender === user?.email;
 
-              return (
+            return (
+              <div
+                key={msg._id}
+                className={`flex ${
+                  isMyMessage
+                    ? "justify-end"
+                    : "justify-start"
+                }`}
+              >
+
                 <div
-                  key={
-                    msg._id
-                  }
-                  className={`flex ${
-                    isMyMessage
-                      ? "justify-end"
-                      : "justify-start"
-                  }`}
+                  className={`
+                    max-w-[85%]
+                    break-words
+                    rounded-lg
+                    px-3
+                    py-2
+                    text-sm
+                    sm:max-w-[70%]
+                    sm:px-4
+                    sm:text-base
+                    ${
+                      isMyMessage
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-black"
+                    }
+                  `}
                 >
 
-                  <div
-                    className={`
-                      max-w-[85%]
+                  {/* MESSAGE TEXT */}
+
+                  <p
+                    className="
+                      whitespace-pre-wrap
                       break-words
-                      rounded-lg
-                      px-3
-                      py-2
-                      text-sm
-                      sm:max-w-[70%]
-                      sm:px-4
-                      sm:text-base
-                      ${
-                        isMyMessage
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-200 text-black"
-                      }
-                    `}
+                    "
+                  >
+                    {msg.text}
+                  </p>
+
+                  {/* TIME + READ STATUS */}
+
+                  <div
+                    className="
+                      mt-1
+                      flex
+                      items-center
+                      justify-end
+                      gap-1
+                    "
                   >
 
-                    {/* MESSAGE TEXT */}
-
-                    <p
-                      className="
-                        whitespace-pre-wrap
-                        break-words
-                      "
+                    <span
+                      className={`
+                        text-[10px]
+                        sm:text-xs
+                        ${
+                          isMyMessage
+                            ? "text-blue-100"
+                            : "text-gray-500"
+                        }
+                      `}
                     >
-                      {msg.text}
-                    </p>
+                      {msg.createdAt
+                        ? new Date(
+                            msg.createdAt
+                          ).toLocaleTimeString(
+                            [],
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )
+                        : ""}
+                    </span>
 
-                    {/* TIME + READ STATUS */}
+                    {/* READ / SENT */}
 
-                    <div
-                      className="
-                        mt-1
-                        flex
-                        items-center
-                        justify-end
-                        gap-1
-                      "
-                    >
-
+                    {isMyMessage && (
                       <span
                         className={`
                           text-[10px]
                           sm:text-xs
                           ${
-                            isMyMessage
+                            msg.read
                               ? "text-blue-100"
-                              : "text-gray-500"
+                              : "text-gray-300"
                           }
                         `}
                       >
-                        {msg.createdAt
-                          ? new Date(
-                              msg.createdAt
-                            ).toLocaleTimeString(
-                              [],
-                              {
-                                hour: "2-digit",
-                                minute:
-                                  "2-digit",
-                              }
-                            )
-                          : ""}
+                        {msg.read
+                          ? "✓✓"
+                          : "✓"}
                       </span>
+                    )}
 
-                      {/* READ / SENT */}
-
-                      {isMyMessage && (
-                        <span
-                          className={`
-                            text-[10px]
-                            sm:text-xs
-                            ${
-                              msg.read
-                                ? "text-blue-100"
-                                : "text-gray-300"
-                            }
-                          `}
-                        >
-                          {msg.read
-                            ? "✓✓"
-                            : "✓"}
-                        </span>
-                      )}
-
-                    </div>
                   </div>
-
                 </div>
-              );
-            }
-          )
+
+              </div>
+            );
+          })
         )}
 
       </div>
@@ -694,13 +660,9 @@ const ChatWindow = ({
           type="text"
           value={message}
           onChange={(e) =>
-            setMessage(
-              e.target.value
-            )
+            setMessage(e.target.value)
           }
-          onKeyDown={
-            handleKeyDown
-          }
+          onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           className="
             min-w-0
@@ -722,9 +684,7 @@ const ChatWindow = ({
 
         <button
           type="button"
-          onClick={
-            sendMessage
-          }
+          onClick={sendMessage}
           className="
             flex-shrink-0
             rounded-lg

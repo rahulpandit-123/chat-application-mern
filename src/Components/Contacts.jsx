@@ -1,5 +1,5 @@
-import axios from "axios";
 import React, { useEffect, useState } from "react";
+import api from "../api/axios";
 
 const Contacts = ({ setSelectedUser }) => {
   const [users, setUsers] = useState([]);
@@ -7,12 +7,7 @@ const Contacts = ({ setSelectedUser }) => {
   useEffect(() => {
     async function getUsers() {
       try {
-        const res = await axios.get(
-          "http://localhost:3000/users",
-          {
-            withCredentials: true,
-          }
-        );
+        const res = await api.get("/users");
 
         setUsers(res.data);
       } catch (error) {

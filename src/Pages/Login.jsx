@@ -1,31 +1,75 @@
-import React, { useState } from 'react'
-import {Link, useNavigate} from 'react-router-dom'
-import axios from 'axios'
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import api from "../api/axios";
 
 const Login = () => {
-  const [email,setEmail] = useState("")
-  const [password,setPassword] = useState("")
-  const navigate = useNavigate()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
-  async function handlelogin (){
-   const obj = {email,password}
-  const res =  await axios.post("http://localhost:3000/login",obj,{
-    withCredentials:true
-  }) 
-  localStorage.setItem("token",res.data)
+  async function handlelogin() {
+    const obj = { email, password };
 
-    navigate("/chat")
-    
+    try {
+      const res = await api.post("/login", obj);
+
+      localStorage.setItem("token", res.data);
+
+      navigate("/chat");
+    } catch (error) {
+      console.error("Login failed:", error);
+      alert("Invalid email or password");
+    }
   }
-  return (
-    <div className='py-26.5 border-2 px-35'>
-      <h2 className='text-blue-600 py-15 text-3xl ml-20 '>Login</h2>
-        <input  style={{padding:"8px" , width:"300px" }} type="email" placeholder='Please Enter Your Email' value={email} onChange={(e)=>setEmail(e.target.value)}/><br /><br />
-        <input style={{padding:"8px" , width:"300px"}} placeholder='Please Enter Your Password' type="password" name="" id=""  value={password} onChange={(e)=>setPassword(e.target.value)}/><br /><br />
-        <button onClick={handlelogin} style={{ padding:"9px" ,width:"310px",color:"white",backgroundColor:"black",marginBottom:"30px"}} >Login</button>
-        <p>Dont have an account? <Link to='/signup'>Signup</Link></p>
-    </div>
-  )
-}
 
-export default Login
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center bg-gray-200 px-4 py-8">
+      <div className="flex w-full max-w-md flex-col items-center rounded-xl border-2 border-gray-300 bg-white px-5 py-10 shadow-md sm:px-8">
+
+        <h2 className="mb-8 text-3xl font-bold text-blue-600">
+          Login
+        </h2>
+
+        <div className="w-full">
+          <input
+            className="mb-4 w-full rounded-md border border-gray-300 p-2.5 outline-none focus:border-blue-500"
+            type="email"
+            placeholder="Please Enter Your Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+
+          <input
+            className="mb-4 w-full rounded-md border border-gray-300 p-2.5 outline-none focus:border-blue-500"
+            type="password"
+            placeholder="Please Enter Your Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          <button
+            onClick={handlelogin}
+            className="mb-6 w-full rounded-md bg-black py-2.5 text-white transition hover:bg-gray-800"
+          >
+            Login
+          </button>
+
+          <p className="text-center text-sm text-gray-600">
+            Don't have an account?{" "}
+            <Link
+              to="/signup"
+              className="font-semibold text-blue-600 hover:underline"
+            >
+              Signup
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
+

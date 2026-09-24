@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 
 import { IoChatboxEllipsesOutline } from "react-icons/io5";
 import { IoIosContacts } from "react-icons/io";
@@ -23,12 +23,7 @@ const Sidebar = ({ setActivePage }) => {
   useEffect(() => {
     async function getProfile() {
       try {
-        const res = await axios.get(
-          "http://localhost:3000/profile",
-          {
-            withCredentials: true,
-          }
-        );
+        const res = await api.get("/profile");
 
         setName([res.data]);
       } catch (error) {
@@ -56,13 +51,7 @@ const Sidebar = ({ setActivePage }) => {
 
   const handleLogout = async () => {
     try {
-      await axios.post(
-        "http://localhost:3000/logout",
-        {},
-        {
-          withCredentials: true,
-        }
-      );
+      await api.post("/logout", {});
 
       console.log("Logout successful");
 

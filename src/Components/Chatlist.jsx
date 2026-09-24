@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 
 const Chatlist = ({
   setSelectedUser,
@@ -16,12 +16,7 @@ const Chatlist = ({
   useEffect(() => {
     async function getChats() {
       try {
-        const res = await axios.get(
-          "http://localhost:3000/chats",
-          {
-            withCredentials: true,
-          }
-        );
+        const res = await api.get("/chats");
 
         console.log("Chats:", res.data);
 
@@ -49,10 +44,10 @@ const Chatlist = ({
       }
 
       try {
-        const res = await axios.get(
-          `http://localhost:3000/search-user?name=${
-            searchName
-          }`
+        const res = await api.get(
+          `/search-user?name=${encodeURIComponent(
+            searchName.trim()
+          )}`
         );
 
         setSearchResults(res.data);
@@ -169,7 +164,7 @@ const Chatlist = ({
               >
                 <div className="flex items-center gap-2 sm:gap-3">
 
-                  {/* Profile image */}
+                  {/* PROFILE IMAGE */}
 
                   {user.profileImage ? (
                     <img
@@ -208,7 +203,7 @@ const Chatlist = ({
                     </div>
                   )}
 
-                  {/* User information */}
+                  {/* USER INFORMATION */}
 
                   <div className="min-w-0 flex-1">
 
@@ -268,9 +263,7 @@ const Chatlist = ({
               >
                 <div className="flex items-center gap-2 sm:gap-3">
 
-                  {/* =========================
-                      PROFILE IMAGE
-                  ========================= */}
+                  {/* PROFILE IMAGE */}
 
                   {chat.profileImage ? (
                     <img
@@ -309,13 +302,11 @@ const Chatlist = ({
                     </div>
                   )}
 
-                  {/* =========================
-                      CHAT INFORMATION
-                  ========================= */}
+                  {/* CHAT INFORMATION */}
 
                   <div className="min-w-0 flex-1">
 
-                    {/* Name + Time */}
+                    {/* NAME + TIME */}
 
                     <div className="flex min-w-0 items-center justify-between gap-2">
 
@@ -354,7 +345,7 @@ const Chatlist = ({
 
                     </div>
 
-                    {/* Last message + unread */}
+                    {/* LAST MESSAGE + UNREAD */}
 
                     <div className="mt-1 flex min-w-0 items-center justify-between gap-2">
 
@@ -370,7 +361,7 @@ const Chatlist = ({
                         {chat.lastMessage}
                       </p>
 
-                      {/* Unread count */}
+                      {/* UNREAD COUNT */}
 
                       {chat.unreadCount > 0 && (
                         <span
@@ -409,4 +400,3 @@ const Chatlist = ({
 };
 
 export default Chatlist;
-
