@@ -13,8 +13,7 @@ const Login = () => {
     try {
       const res = await api.post("/login", obj);
 
-      localStorage.setItem("token", res.data);
-
+      console.log("Login response:", res.data);
       navigate("/chat");
     } catch (error) {
       console.error("Login failed:", error);
@@ -31,6 +30,7 @@ const Login = () => {
         </h2>
 
         <div className="w-full">
+
           <input
             className="mb-4 w-full rounded-md border border-gray-300 p-2.5 outline-none focus:border-blue-500"
             type="email"
@@ -65,6 +65,7 @@ const Login = () => {
               Signup
             </Link>
           </p>
+
         </div>
       </div>
     </div>
@@ -72,4 +73,3 @@ const Login = () => {
 };
 
 export default Login;
-
