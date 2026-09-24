@@ -12,9 +12,11 @@ import Message from "./Models/Message.js";
 import multer from "multer";
 import cloudinary from "./Config/Cloudinary.js";
 
-dotenv.config({
-  path: "../../.env",
-});
+// =======================
+// Environment Variables
+// =======================
+
+dotenv.config();
 
 // =======================
 // MongoDB Connection
@@ -23,10 +25,10 @@ dotenv.config({
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("MongoDb is connected");
+    console.log("MongoDB is connected");
   })
   .catch((error) => {
-    console.log("mongodb error", error);
+    console.log("MongoDB error:", error);
   });
 
 // =======================
@@ -39,9 +41,13 @@ const server = http.createServer(app);
 
 app.use(express.json());
 
+// =======================
+// CORS
+// =======================
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   })
 );
@@ -56,7 +62,7 @@ const connectedUsers = {};
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   },
 });
@@ -133,7 +139,6 @@ io.on("connection", (socket) => {
   socket.on(
     "call-user",
     ({ receiver, offer, caller }) => {
-
       console.log(
         "Call request:",
         caller,
@@ -145,7 +150,6 @@ io.on("connection", (socket) => {
         connectedUsers[receiver];
 
       if (receiverSocket) {
-
         io.to(receiverSocket).emit(
           "incoming-call",
           {
@@ -158,9 +162,7 @@ io.on("connection", (socket) => {
           "Incoming call sent to:",
           receiver
         );
-
       } else {
-
         socket.emit(
           "call-failed",
           {
@@ -184,7 +186,6 @@ io.on("connection", (socket) => {
   socket.on(
     "accept-call",
     ({ caller, answer }) => {
-
       console.log(
         "Call accepted by:",
         caller
@@ -194,7 +195,6 @@ io.on("connection", (socket) => {
         connectedUsers[caller];
 
       if (callerSocket) {
-
         io.to(callerSocket).emit(
           "call-accepted",
           {
@@ -206,9 +206,7 @@ io.on("connection", (socket) => {
           "Call answer sent to caller:",
           caller
         );
-
       } else {
-
         console.log(
           "Caller is no longer online:",
           caller
@@ -224,7 +222,6 @@ io.on("connection", (socket) => {
   socket.on(
     "ice-candidate",
     ({ receiver, candidate }) => {
-
       console.log(
         "ICE candidate received for:",
         receiver
@@ -234,7 +231,6 @@ io.on("connection", (socket) => {
         connectedUsers[receiver];
 
       if (receiverSocket) {
-
         io.to(receiverSocket).emit(
           "ice-candidate",
           {
@@ -257,7 +253,6 @@ io.on("connection", (socket) => {
   socket.on(
     "reject-call",
     ({ caller }) => {
-
       console.log(
         "Call rejected by:",
         socket.id
@@ -267,7 +262,6 @@ io.on("connection", (socket) => {
         connectedUsers[caller];
 
       if (callerSocket) {
-
         io.to(callerSocket).emit(
           "call-rejected"
         );
@@ -287,7 +281,6 @@ io.on("connection", (socket) => {
   socket.on(
     "end-call",
     ({ receiver }) => {
-
       console.log(
         "Call ended. Receiver:",
         receiver
@@ -297,7 +290,6 @@ io.on("connection", (socket) => {
         connectedUsers[receiver];
 
       if (receiverSocket) {
-
         io.to(receiverSocket).emit(
           "call-ended"
         );
@@ -315,16 +307,12 @@ io.on("connection", (socket) => {
   // =======================
 
   socket.on("disconnect", () => {
-
     console.log(
       "User disconnected:",
       socket.id
     );
 
-    for (
-      let email in connectedUsers
-    ) {
-
+    for (const email in connectedUsers) {
       if (
         connectedUsers[email] ===
         socket.id
@@ -352,7 +340,9 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     cb(
       null,
-      Date.now() + "-" + file.originalname
+      Date.now() +
+        "-" +
+        file.originalname
     );
   },
 });
@@ -374,9 +364,7 @@ app.post(
   "/upload-profile",
   upload.single("profile"),
   async (req, res) => {
-
     try {
-
       console.log(req.file);
 
       if (!req.file) {
@@ -396,7 +384,10 @@ app.post(
       }
 
       const decode =
-        jwt.verify(token, "2004");
+        jwt.verify(
+          token,
+          process.env.JWT_SECRET
+        );
 
       // Upload image to Cloudinary
       const result =
@@ -426,7 +417,6 @@ app.post(
       });
 
     } catch (error) {
-
       console.log(
         "Profile upload error:",
         error
@@ -447,16 +437,13 @@ app.post(
 app.get(
   "/totalusers",
   async (req, res) => {
-
     try {
-
       const users =
         await User.find({});
 
       res.json(users);
 
     } catch (error) {
-
       console.log(
         "Total users error:",
         error
@@ -477,9 +464,7 @@ app.get(
 app.post(
   "/adduser",
   async (req, res) => {
-
     try {
-
       const {
         name,
         email,
@@ -507,7 +492,6 @@ app.post(
       });
 
     } catch (error) {
-
       console.log(
         "Add user error:",
         error
@@ -528,9 +512,7 @@ app.post(
 app.post(
   "/login",
   async (req, res) => {
-
     try {
-
       const {
         email,
         password,
@@ -542,7 +524,6 @@ app.post(
         });
 
       if (!findemail) {
-
         return res.status(401).json({
           message:
             "Invalid email or password",
@@ -556,7 +537,6 @@ app.post(
         );
 
       if (!validatepassword) {
-
         return res.status(401).json({
           message:
             "Invalid email or password",
@@ -568,7 +548,7 @@ app.post(
           {
             email_id: email,
           },
-          "2004"
+          process.env.JWT_SECRET
         );
 
       res.cookie(
@@ -578,6 +558,8 @@ app.post(
           httpOnly: true,
           maxAge:
             60 * 60 * 1000,
+          sameSite: "none",
+          secure: true,
         }
       );
 
@@ -587,7 +569,6 @@ app.post(
       });
 
     } catch (error) {
-
       console.log(
         "Login error:",
         error
@@ -608,15 +589,12 @@ app.post(
 app.get(
   "/profile",
   async (req, res) => {
-
     try {
-
       const {
         token,
       } = req.cookies;
 
       if (!token) {
-
         return res.status(401).json({
           message: "No token",
         });
@@ -625,7 +603,7 @@ app.get(
       const decode =
         jwt.verify(
           token,
-          "2004"
+          process.env.JWT_SECRET
         );
 
       const finduser =
@@ -635,7 +613,6 @@ app.get(
         });
 
       if (!finduser) {
-
         return res.status(401).json({
           message:
             "User not found",
@@ -650,7 +627,6 @@ app.get(
       });
 
     } catch (error) {
-
       console.log(error);
 
       res.status(401).json({
@@ -668,9 +644,7 @@ app.get(
 app.get(
   "/search-user",
   async (req, res) => {
-
     try {
-
       const { name } =
         req.query;
 
@@ -685,7 +659,6 @@ app.get(
       res.json(users);
 
     } catch (error) {
-
       console.log(
         "Search user error:",
         error
@@ -706,9 +679,7 @@ app.get(
 app.get(
   "/users",
   async (req, res) => {
-
     try {
-
       const users =
         await User.find(
           {},
@@ -722,7 +693,6 @@ app.get(
       res.json(users);
 
     } catch (error) {
-
       console.log(
         "Users error:",
         error
@@ -743,14 +713,11 @@ app.get(
 app.get(
   "/messages/:email",
   async (req, res) => {
-
     try {
-
       const token =
         req.cookies.token;
 
       if (!token) {
-
         return res.status(401).json({
           message:
             "No token",
@@ -760,7 +727,7 @@ app.get(
       const decode =
         jwt.verify(
           token,
-          "2004"
+          process.env.JWT_SECRET
         );
 
       const currentUser =
@@ -792,7 +759,6 @@ app.get(
       res.json(messages);
 
     } catch (error) {
-
       console.log(
         "Get messages error:",
         error
@@ -813,14 +779,11 @@ app.get(
 app.put(
   "/messages/:email/read",
   async (req, res) => {
-
     try {
-
       const token =
         req.cookies.token;
 
       if (!token) {
-
         return res.status(401).json({
           message:
             "No token",
@@ -830,7 +793,7 @@ app.put(
       const decode =
         jwt.verify(
           token,
-          "2004"
+          process.env.JWT_SECRET
         );
 
       const currentUser =
@@ -860,7 +823,6 @@ app.put(
       });
 
     } catch (error) {
-
       console.log(
         "Mark read error:",
         error
@@ -881,11 +843,14 @@ app.put(
 app.post(
   "/logout",
   (req, res) => {
-
     try {
-
       res.clearCookie(
-        "token"
+        "token",
+        {
+          httpOnly: true,
+          sameSite: "none",
+          secure: true,
+        }
       );
 
       res.json({
@@ -894,7 +859,6 @@ app.post(
       });
 
     } catch (error) {
-
       console.log(
         "Logout error:",
         error
@@ -915,14 +879,11 @@ app.post(
 app.get(
   "/chats",
   async (req, res) => {
-
     try {
-
       const token =
         req.cookies.token;
 
       if (!token) {
-
         return res.status(401).json({
           message:
             "No token",
@@ -932,7 +893,7 @@ app.get(
       const decode =
         jwt.verify(
           token,
-          "2004"
+          process.env.JWT_SECRET
         );
 
       const currentUser =
@@ -960,7 +921,6 @@ app.get(
       for (
         const message of messages
       ) {
-
         // Find the other person
         const otherUser =
           message.sender ===
@@ -976,7 +936,6 @@ app.get(
               otherUser
           )
         ) {
-
           // Count unread messages
           const unreadCount =
             await Message.countDocuments({
@@ -1002,7 +961,6 @@ app.get(
             );
 
           if (user) {
-
             chats.push({
               name:
                 user.name,
@@ -1023,7 +981,6 @@ app.get(
       res.json(chats);
 
     } catch (error) {
-
       console.log(
         "Chat list error:",
         error
@@ -1041,11 +998,15 @@ app.get(
 // Start Server
 // =======================
 
+const PORT =
+  process.env.PORT || 3000;
+
 server.listen(
-  3000,
+  PORT,
   () => {
     console.log(
-      "Server running on port 3000"
+      `Server running on port ${PORT}`
     );
   }
 );
+
