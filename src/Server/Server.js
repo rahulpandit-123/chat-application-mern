@@ -18,6 +18,16 @@ import cloudinary from "./Config/Cloudinary.js";
 
 dotenv.config();
 
+console.log(
+  "JWT_SECRET exists:",
+  !!process.env.JWT_SECRET
+);
+
+console.log(
+  "FRONTEND_URL:",
+  process.env.FRONTEND_URL
+);
+
 // =======================
 // MongoDB Connection
 // =======================
@@ -52,6 +62,10 @@ app.use(
   })
 );
 
+// =======================
+// Cookie Parser
+// =======================
+
 app.use(cookieParser());
 
 // =======================
@@ -67,11 +81,15 @@ const io = new Server(server, {
   },
 });
 
+// =======================
+// Socket.io Connection
+// =======================
+
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   // =======================
-  // User Login / Register Socket
+  // User Login / Register
   // =======================
 
   socket.on("login", (email) => {
@@ -89,23 +107,21 @@ io.on("connection", (socket) => {
     try {
       console.log("Message received:", message);
 
-      // Save message to MongoDB
       const newMessage = await Message.create({
         sender: message.sender,
         receiver: message.receiver,
         text: message.text,
       });
 
-      // Convert MongoDB document into normal object
       const savedMessage = newMessage.toObject();
 
       console.log("Message saved:", savedMessage);
 
-      // Find receiver's socket
+      // Find receiver socket
       const receiverSocket =
         connectedUsers[message.receiver];
 
-      // Send message to receiver if online
+      // Send message to receiver
       if (receiverSocket) {
         io.to(receiverSocket).emit(
           "receive-message",
@@ -133,7 +149,6 @@ io.on("connection", (socket) => {
 
   // =======================
   // Caller -> Receiver
-  // Send Call Request
   // =======================
 
   socket.on(
@@ -351,6 +366,7 @@ const upload = multer({
   storage,
 });
 
+// Serve uploaded files
 app.use(
   "/uploads",
   express.static("uploads")
@@ -365,7 +381,7 @@ app.post(
   upload.single("profile"),
   async (req, res) => {
     try {
-      console.log(req.file);
+      console.log("Profile file:", req.file);
 
       if (!req.file) {
         return res.status(400).json({
@@ -398,7 +414,7 @@ app.post(
           }
         );
 
-      // Save Cloudinary URL in MongoDB
+      // Save Cloudinary URL
       await User.findOneAndUpdate(
         {
           email: decode.email_id,
@@ -471,6 +487,29 @@ app.post(
         password,
       } = req.body;
 
+      if (
+        !name ||
+        !email ||
+        !password
+      ) {
+        return res.status(400).json({
+          message:
+            "All fields are required",
+        });
+      }
+
+      const existingUser =
+        await User.findOne({
+          email,
+        });
+
+      if (existingUser) {
+        return res.status(409).json({
+          message:
+            "User already exists",
+        });
+      }
+
       const hashedPass =
         await bcrypt.hash(
           password,
@@ -486,7 +525,7 @@ app.post(
 
       await newuser.save();
 
-      res.json({
+      res.status(201).json({
         message:
           "User created successfully",
       });
@@ -518,6 +557,21 @@ app.post(
         password,
       } = req.body;
 
+      console.log(
+        "Login attempt:",
+        email
+      );
+
+      if (
+        !email ||
+        !password
+      ) {
+        return res.status(400).json({
+          message:
+            "Email and password are required",
+        });
+      }
+
       const findemail =
         await User.findOne({
           email,
@@ -543,27 +597,51 @@ app.post(
         });
       }
 
+      // Check JWT secret
+      if (!process.env.JWT_SECRET) {
+        console.error(
+          "JWT_SECRET is missing"
+        );
+
+        return res.status(500).json({
+          message:
+            "JWT_SECRET is not configured on server",
+        });
+      }
+
+      // Create JWT
       const jwt_token =
         jwt.sign(
           {
-            email_id: email,
+            email_id:
+              findemail.email,
           },
-          process.env.JWT_SECRET
+          process.env.JWT_SECRET,
+          {
+            expiresIn: "1h",
+          }
         );
 
+      // Create authentication cookie
       res.cookie(
         "token",
         jwt_token,
         {
           httpOnly: true,
+          secure: true,
+          sameSite: "none",
+          path: "/",
           maxAge:
             60 * 60 * 1000,
-          sameSite: "none",
-          secure: true,
         }
       );
 
-      res.json({
+      console.log(
+        "Login successful:",
+        findemail.email
+      );
+
+      res.status(200).json({
         message:
           "login successful",
       });
@@ -590,13 +668,27 @@ app.get(
   "/profile",
   async (req, res) => {
     try {
-      const {
-        token,
-      } = req.cookies;
+      const token =
+        req.cookies.token;
 
       if (!token) {
+        console.log(
+          "Profile request: No token"
+        );
+
         return res.status(401).json({
           message: "No token",
+        });
+      }
+
+      if (!process.env.JWT_SECRET) {
+        console.error(
+          "JWT_SECRET is missing"
+        );
+
+        return res.status(500).json({
+          message:
+            "JWT_SECRET is not configured",
         });
       }
 
@@ -619,19 +711,26 @@ app.get(
         });
       }
 
-      res.json({
-        name: finduser.name,
-        email: finduser.email,
+      res.status(200).json({
+        name:
+          finduser.name,
+
+        email:
+          finduser.email,
+
         profileImage:
           finduser.profileImage,
       });
 
     } catch (error) {
-      console.log(error);
+      console.log(
+        "Profile authentication error:",
+        error
+      );
 
       res.status(401).json({
         message:
-          "Invalid token",
+          "Invalid or expired token",
       });
     }
   }
@@ -647,6 +746,10 @@ app.get(
     try {
       const { name } =
         req.query;
+
+      if (!name) {
+        return res.json([]);
+      }
 
       const users =
         await User.find({
@@ -742,12 +845,15 @@ app.get(
             {
               sender:
                 currentUser,
+
               receiver:
                 otherUser,
             },
+
             {
               sender:
                 otherUser,
+
               receiver:
                 currentUser,
             },
@@ -806,10 +912,13 @@ app.put(
         {
           sender:
             otherUser,
+
           receiver:
             currentUser,
+
           read: false,
         },
+
         {
           $set: {
             read: true,
@@ -848,8 +957,9 @@ app.post(
         "token",
         {
           httpOnly: true,
-          sameSite: "none",
           secure: true,
+          sameSite: "none",
+          path: "/",
         }
       );
 
@@ -899,7 +1009,7 @@ app.get(
       const currentUser =
         decode.email_id;
 
-      // Get all messages involving current user
+      // Get messages involving current user
       const messages =
         await Message.find({
           $or: [
@@ -907,6 +1017,7 @@ app.get(
               sender:
                 currentUser,
             },
+
             {
               receiver:
                 currentUser,
@@ -921,7 +1032,7 @@ app.get(
       for (
         const message of messages
       ) {
-        // Find the other person
+        // Find the other user
         const otherUser =
           message.sender ===
           currentUser
@@ -930,51 +1041,61 @@ app.get(
 
         // Avoid duplicate users
         if (
-          !chats.find(
+          chats.find(
             (chat) =>
               chat.email ===
               otherUser
           )
         ) {
-          // Count unread messages
-          const unreadCount =
-            await Message.countDocuments({
-              sender:
-                otherUser,
-              receiver:
-                currentUser,
-              read: false,
-            });
+          continue;
+        }
 
-          // Get user's profile
-          const user =
-            await User.findOne(
-              {
-                email:
-                  otherUser,
-              },
-              {
-                name: 1,
-                email: 1,
-                profileImage: 1,
-              }
-            );
+        // Count unread messages
+        const unreadCount =
+          await Message.countDocuments({
+            sender:
+              otherUser,
 
-          if (user) {
-            chats.push({
-              name:
-                user.name,
+            receiver:
+              currentUser,
+
+            read: false,
+          });
+
+        // Find user
+        const user =
+          await User.findOne(
+            {
               email:
-                user.email,
-              profileImage:
-                user.profileImage,
-              lastMessage:
-                message.text,
-              timestamp:
-                message.createdAt,
-              unreadCount,
-            });
-          }
+                otherUser,
+            },
+
+            {
+              name: 1,
+              email: 1,
+              profileImage: 1,
+            }
+          );
+
+        if (user) {
+          chats.push({
+            name:
+              user.name,
+
+            email:
+              user.email,
+
+            profileImage:
+              user.profileImage,
+
+            lastMessage:
+              message.text,
+
+            timestamp:
+              message.createdAt,
+
+            unreadCount,
+          });
         }
       }
 
@@ -1009,4 +1130,3 @@ server.listen(
     );
   }
 );
-
